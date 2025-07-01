@@ -1,4 +1,4 @@
-const book = require('../models/Book');
+const Book = require('../models/Book');
 
 // Get all books(public)
 exports.getAllBooks = async (req, res) => {
@@ -16,12 +16,13 @@ exports.getBookById = async (req, res) => {
       .populate('createdBy', 'name')
       .populate({
         path: 'reviews',
-        populate: { path: 'user', select: 'name' }
+        populate: { path: 'user', select: 'name' } // nested populate
       });
 
     if (!book) return res.status(404).json({ message: 'Book not found' });
     res.json(book);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
