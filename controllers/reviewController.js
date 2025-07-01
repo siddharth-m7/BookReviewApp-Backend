@@ -39,3 +39,54 @@ exports.getMyReviews = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.updateReview = async (req, res) => {
+  const { rating, comment } = req.body;
+
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) return res.status(404).json({ message: 'Review not found' });
+
+    if (review.user.toString() !== req.user.id)
+      return res.status(403).json({ message: 'Not your review' });
+
+    review.rating = rating ?? review.rating;
+    review.comment = comment ?? review.comment;
+    await review.save();
+
+    // Update book average
+    const reviews = await Review.find({ book: review.book });
+    const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    await Book.findByIdAndUpdate(review.book, { averageRating: avg.toFixed(1) });
+
+    res.json(review);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+exports.deleteReview = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) return res.status(404).json({ message: 'Review not found' });
+
+    if (review.user.toString() !== req.user.id)
+      return res.status(403).json({ message: 'Not your review' });
+
+    await review.deleteOne();
+
+    // Update average rating
+    const reviews = await Review.find({ book: review.book });
+    const avg = reviews.length
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+
+    await Book.findByIdAndUpdate(review.book, { averageRating: avg.toFixed(1) });
+
+    res.json({ message: 'Review deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
