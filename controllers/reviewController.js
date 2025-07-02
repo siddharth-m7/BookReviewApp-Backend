@@ -28,15 +28,21 @@ exports.addReview = async (req, res) => {
 };
 
 
-// Get all reviews of the logged-in user
 exports.getMyReviews = async (req, res) => {
   try {
-    const reviews = await Review.find({ user: req.user.id })
+    const reviews = await Review.find({ user: req.user._id })
       .populate('book', 'title author');
 
-    res.json(reviews);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.json({
+      user: {
+        name: req.user.name,
+        email: req.user.email,
+        _id: req.user._id,
+      },
+      reviews,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
